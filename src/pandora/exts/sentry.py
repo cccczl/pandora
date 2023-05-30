@@ -13,7 +13,7 @@ def init(proxy):
         https_proxy=proxy,
         traces_sample_rate=0,
         environment='production',
-        release='pandora@{}'.format(__version__),
+        release=f'pandora@{__version__}',
     )
 
 

@@ -73,14 +73,14 @@ class ChatBot:
         app.route('/chat/<conversation_id>')(self.chat)
 
         if not self.debug:
-            self.logger.warning('Serving on http://{}:{}'.format(host, port))
+            self.logger.warning(f'Serving on http://{host}:{port}')
 
         WSGIRequestHandler.protocol_version = 'HTTP/1.1'
         serve(app, host=host, port=port, ident=None, threads=threads)
 
     @staticmethod
     def __after_request(resp):
-        resp.headers['X-Server'] = 'pandora/{}'.format(__version__)
+        resp.headers['X-Server'] = f'pandora/{__version__}'
 
         return resp
 

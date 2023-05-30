@@ -40,10 +40,10 @@ class API:
             return
 
         async for utf8_line in resp.aiter_lines():
-            if 'data: [DONE]' == utf8_line[0:12]:
+            if utf8_line[:12] == 'data: [DONE]':
                 break
 
-            if 'data: {' == utf8_line[0:7]:
+            if utf8_line[:7] == 'data: {':
                 yield json.loads(utf8_line[6:])
 
     @staticmethod
@@ -106,8 +106,7 @@ class ChatGPT(API):
             'allow_redirects': False,
         }
 
-        self.user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) ' \
-                          'Pandora/{} Safari/537.36'.format(__version__)
+        self.user_agent = f'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Pandora/{__version__} Safari/537.36'
 
         self.api_prefix = getenv('CHATGPT_API_PREFIX', 'https://ai.fakeopen.com')
 
@@ -115,7 +114,7 @@ class ChatGPT(API):
 
     def __get_headers(self, token_key=None):
         return {
-            'Authorization': 'Bearer ' + self.get_access_token(token_key),
+            'Authorization': f'Bearer {self.get_access_token(token_key)}',
             'User-Agent': self.user_agent,
             'Content-Type': 'application/json',
         }
@@ -127,42 +126,42 @@ class ChatGPT(API):
         return self.access_token_key_list
 
     def list_models(self, raw=False, token=None):
-        url = '{}/api/models'.format(self.api_prefix)
+        url = f'{self.api_prefix}/api/models'
         resp = self.session.get(url=url, headers=self.__get_headers(token), **self.req_kwargs)
 
         if raw:
             return resp
 
         if resp.status_code != 200:
-            raise Exception('list models failed: ' + self.__get_error(resp))
+            raise Exception(f'list models failed: {self.__get_error(resp)}')
 
         result = resp.json()
         if 'models' not in result:
-            raise Exception('list models failed: ' + resp.text)
+            raise Exception(f'list models failed: {resp.text}')
 
         return result['models']
 
     def list_conversations(self, offset, limit, raw=False, token=None):
-        url = '{}/api/conversations?offset={}&limit={}'.format(self.api_prefix, offset, limit)
+        url = f'{self.api_prefix}/api/conversations?offset={offset}&limit={limit}'
         resp = self.session.get(url=url, headers=self.__get_headers(token), **self.req_kwargs)
 
         if raw:
             return resp
 
         if resp.status_code != 200:
-            raise Exception('list conversations failed: ' + self.__get_error(resp))
+            raise Exception(f'list conversations failed: {self.__get_error(resp)}')
 
         return resp.json()
 
     def get_conversation(self, conversation_id, raw=False, token=None):
-        url = '{}/api/conversation/{}'.format(self.api_prefix, conversation_id)
+        url = f'{self.api_prefix}/api/conversation/{conversation_id}'
         resp = self.session.get(url=url, headers=self.__get_headers(token), **self.req_kwargs)
 
         if raw:
             return resp
 
         if resp.status_code != 200:
-            raise Exception('get conversation failed: ' + self.__get_error(resp))
+            raise Exception(f'get conversation failed: {self.__get_error(resp)}')
 
         return resp.json()
 
@@ -171,18 +170,18 @@ class ChatGPT(API):
             'is_visible': False,
         }
 
-        url = '{}/api/conversations'.format(self.api_prefix)
+        url = f'{self.api_prefix}/api/conversations'
         resp = self.session.patch(url=url, headers=self.__get_headers(token), json=data, **self.req_kwargs)
 
         if raw:
             return resp
 
         if resp.status_code != 200:
-            raise Exception('clear conversations failed: ' + self.__get_error(resp))
+            raise Exception(f'clear conversations failed: {self.__get_error(resp)}')
 
         result = resp.json()
         if 'success' not in result:
-            raise Exception('clear conversations failed: ' + resp.text)
+            raise Exception(f'clear conversations failed: {resp.text}')
 
         return result['success']
 
@@ -194,7 +193,7 @@ class ChatGPT(API):
         return self.__update_conversation(conversation_id, data, raw, token)
 
     def gen_conversation_title(self, conversation_id, model, message_id, raw=False, token=None):
-        url = '{}/api/conversation/gen_title/{}'.format(self.api_prefix, conversation_id)
+        url = f'{self.api_prefix}/api/conversation/gen_title/{conversation_id}'
         data = {
             'model': model,
             'message_id': message_id,
@@ -205,11 +204,11 @@ class ChatGPT(API):
             return resp
 
         if resp.status_code != 200:
-            raise Exception('gen title failed: ' + self.__get_error(resp))
+            raise Exception(f'gen title failed: {self.__get_error(resp)}')
 
         result = resp.json()
         if 'title' not in result:
-            raise Exception('gen title failed: ' + resp.text)
+            raise Exception(f'gen title failed: {resp.text}')
 
         return result['title']
 
@@ -279,24 +278,24 @@ class ChatGPT(API):
         return self.__request_conversation(data, token)
 
     def __request_conversation(self, data, token=None):
-        url = '{}/api/conversation'.format(self.api_prefix)
+        url = f'{self.api_prefix}/api/conversation'
         headers = {**self.session.headers, **self.__get_headers(token), 'Accept': 'text/event-stream'}
 
         return self._request_sse(url, headers, data)
 
     def __update_conversation(self, conversation_id, data, raw=False, token=None):
-        url = '{}/api/conversation/{}'.format(self.api_prefix, conversation_id)
+        url = f'{self.api_prefix}/api/conversation/{conversation_id}'
         resp = self.session.patch(url=url, headers=self.__get_headers(token), json=data, **self.req_kwargs)
 
         if raw:
             return resp
 
         if resp.status_code != 200:
-            raise Exception('update conversation failed: ' + self.__get_error(resp))
+            raise Exception(f'update conversation failed: {self.__get_error(resp)}')
 
         result = resp.json()
         if 'success' not in result:
-            raise Exception('update conversation failed: ' + resp.text)
+            raise Exception(f'update conversation failed: {resp.text}')
 
         return result['success']
 
@@ -321,13 +320,13 @@ class ChatCompletion(API):
             'allow_redirects': False,
         }
 
-        self.user_agent = 'pandora/{}'.format(__version__)
+        self.user_agent = f'pandora/{__version__}'
 
         super().__init__(proxy, self.req_kwargs['verify'])
 
     def __get_headers(self, api_key):
         return {
-            'Authorization': 'Bearer ' + api_key,
+            'Authorization': f'Bearer {api_key}',
             'User-Agent': self.user_agent,
             'Content-Type': 'application/json',
         }

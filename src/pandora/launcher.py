@@ -18,7 +18,7 @@ from .openai.api import ChatGPT
 from .openai.auth import Auth0
 from .openai.utils import Console
 
-if 'nt' == os.name:
+if os.name == 'nt':
     import pyreadline3 as readline
 else:
     import readline
@@ -59,7 +59,7 @@ def confirm_access_token(token_file=None, silence=False, api=False):
 
     if token_file:
         if not os.path.isfile(token_file):
-            raise Exception('Error: {} is not a file.'.format(token_file))
+            raise Exception(f'Error: {token_file} is not a file.')
 
         access_token = read_access_token(token_file)
         if os.path.isfile(app_token_file) and access_token == read_access_token(app_token_file):
@@ -70,14 +70,14 @@ def confirm_access_token(token_file=None, silence=False, api=False):
     if app_token_file_exists:
         confirm = 'y' if silence else Prompt.ask('A saved access token has been detected. Do you want to use it?',
                                                  choices=['y', 'n', 'del'], default='y')
-        if 'y' == confirm:
+        if confirm == 'y':
             access_token = read_access_token(app_token_file)
             if not check_access_token_out(access_token, api):
                 os.remove(app_token_file)
                 return None, True
 
             return access_token, False
-        elif 'del' == confirm:
+        elif confirm == 'del':
             os.remove(app_token_file)
 
     return None, True
@@ -85,7 +85,7 @@ def confirm_access_token(token_file=None, silence=False, api=False):
 
 def parse_access_tokens(tokens_file, api=False):
     if not os.path.isfile(tokens_file):
-        raise Exception('Error: {} is not a file.'.format(tokens_file))
+        raise Exception(f'Error: {tokens_file} is not a file.')
 
     import json
     with open(tokens_file, 'r') as f:
@@ -94,7 +94,7 @@ def parse_access_tokens(tokens_file, api=False):
     valid_tokens = {}
     for key, value in tokens.items():
         if not check_access_token_out(value, api=api):
-            Console.error('### Access token id: {}'.format(key))
+            Console.error(f'### Access token id: {key}')
             continue
         valid_tokens[key] = value
 
@@ -192,7 +192,7 @@ def main():
             from .migrations.migrate import do_migrate
 
             do_migrate()
-        except (ImportError, ModuleNotFoundError):
+        except ImportError:
             Console.error_bh('### You need `pip install Pandora-ChatGPT[api]` to support API mode.')
             return
 
@@ -236,7 +236,7 @@ def run():
     try:
         main()
     except Exception as e:
-        Console.error_bh('### Error occurred: ' + str(e))
+        Console.error_bh(f'### Error occurred: {str(e)}')
 
         if __show_verbose:
             logger.exception('Exception occurred.')
