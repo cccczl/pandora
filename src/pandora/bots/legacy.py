@@ -42,8 +42,7 @@ class ChatBot:
     def run(self):
         self.token_key = self.__choice_token_key()
 
-        conversation_base = self.__choice_conversation()
-        if conversation_base:
+        if conversation_base := self.__choice_conversation():
             self.__load_conversation(conversation_base['id'])
         else:
             self.__new_conversation()
@@ -52,13 +51,15 @@ class ChatBot:
 
     def __talk_loop(self):
         while True:
-            Console.info_b('You{}:'.format(' (edit)' if self.state and self.state.edit_index else ''))
+            Console.info_b(
+                f"You{' (edit)' if self.state and self.state.edit_index else ''}:"
+            )
 
             prompt = self.__get_input()
             if not prompt:
                 continue
 
-            if '/' == prompt[0]:
+            if prompt[0] == '/':
                 self.__process_command(prompt)
                 continue
 
@@ -73,7 +74,7 @@ class ChatBot:
             if not line:
                 break
 
-            if '/' == line[0]:
+            if line[0] == '/':
                 return line
 
             lines.append(line)
@@ -83,34 +84,34 @@ class ChatBot:
     def __process_command(self, command):
         command = command.strip().lower()
 
-        if '/quit' == command or '/exit' == command or '/bye' == command:
+        if command in ['/quit', '/exit', '/bye']:
             raise KeyboardInterrupt
-        elif '/del' == command or '/delete' == command or '/remove' == command:
+        elif command in ['/del', '/delete', '/remove']:
             self.__del_conversation(self.state)
-        elif '/title' == command or '/set_title' == command or '/set-title' == command:
+        elif command in ['/title', '/set_title', '/set-title']:
             self.__set_conversation_title(self.state)
-        elif '/select' == command:
+        elif command == '/select':
             self.run()
-        elif '/refresh' == command or '/reload' == command:
+        elif command in ['/refresh', '/reload']:
             self.__load_conversation(self.state.conversation_id)
-        elif '/new' == command:
+        elif command == '/new':
             self.__new_conversation()
             self.__talk_loop()
-        elif '/regen' == command or '/regenerate' == command:
+        elif command in ['/regen', '/regenerate']:
             self.__regenerate_reply(self.state)
-        elif '/goon' == command or '/continue' == command:
+        elif command in ['/goon', '/continue']:
             self.__continue(self.state)
-        elif '/edit' == command or '/modify' == command:
+        elif command in ['/edit', '/modify']:
             self.__edit_choice()
-        elif '/token' == command:
+        elif command == '/token':
             self.__print_access_token()
-        elif '/cls' == command or '/clear' == command:
+        elif command in ['/cls', '/clear']:
             self.__clear_screen()
-        elif '/copy' == command or '/cp' == command:
+        elif command in ['/copy', '/cp']:
             self.__copy_text()
-        elif '/copy_code' == command or "/cp_code" == command:
+        elif command in ['/copy_code', "/cp_code"]:
             self.__copy_code()
-        elif '/ver' == command or '/version' == command:
+        elif command in ['/ver', '/version']:
             self.__print_version()
         else:
             self.__print_usage()
@@ -148,9 +149,9 @@ class ChatBot:
 
             preview_prompt = re.sub(pattern, ' ', item.prompt)
             if len(preview_prompt) > 40:
-                preview_prompt = '{}...'.format(preview_prompt[0:40])
+                preview_prompt = f'{preview_prompt[:40]}...'
 
-            Console.info('  {}.\t{}'.format(number, preview_prompt))
+            Console.info(f'  {number}.\t{preview_prompt}')
 
         choices.append('c')
         Console.warn('  c.\t** Cancel')
@@ -158,7 +159,7 @@ class ChatBot:
         default_choice = None if len(choices) > 2 else '1'
         while True:
             choice = Prompt.ask('Your choice', choices=choices, show_choices=False, default=default_choice)
-            if 'c' == choice:
+            if choice == 'c':
                 return
 
             self.state.edit_index = int(choice)
@@ -177,7 +178,7 @@ class ChatBot:
 
     @staticmethod
     def __print_version():
-        Console.debug_bh('#### Version: {}'.format(__version__))
+        Console.debug_bh(f'#### Version: {__version__}')
         print()
 
     def __new_conversation(self):
@@ -188,7 +189,7 @@ class ChatBot:
 
     @staticmethod
     def __print_conversation_title(title: str):
-        Console.info_bh('==================== {} ===================='.format(title))
+        Console.info_bh(f'==================== {title} ====================')
         Console.debug_h('Double enter to send. Type /? for help.')
 
     def __set_conversation_title(self, state: State):
@@ -258,13 +259,13 @@ class ChatBot:
 
             role = message['author']['role'] if 'author' in message else message['role']
 
-            if 'user' == role:
+            if role == 'user':
                 prompt = self.state.user_prompt
                 self.state.user_prompts.append(ChatPrompt(message['content']['parts'][0], parent_id=node['parent']))
 
                 Console.info_b('You:')
                 Console.info(message['content']['parts'][0])
-            elif 'assistant' == role:
+            elif role == 'assistant':
                 prompt = self.state.chatgpt_prompt
 
                 if not merge:
@@ -291,7 +292,7 @@ class ChatBot:
             idx = self.state.edit_index - 1
             user_prompt = self.state.user_prompts[idx]
             self.state.user_prompt = ChatPrompt(prompt, parent_id=user_prompt.parent_id)
-            self.state.user_prompts = self.state.user_prompts[0:idx]
+            self.state.user_prompts = self.state.user_prompts[:idx]
 
             self.state.edit_index = None
         else:
@@ -308,7 +309,7 @@ class ChatBot:
             new_title = self.chatgpt.gen_conversation_title(self.state.conversation_id, self.state.model_slug,
                                                             self.state.chatgpt_prompt.message_id, token=self.token_key)
             self.state.title = new_title
-            Console.debug_bh('#### Title generated: ' + new_title)
+            Console.debug_bh(f'#### Title generated: {new_title}')
 
     def __regenerate_reply(self, state):
         if not state.conversation_id:
@@ -334,7 +335,7 @@ class ChatBot:
         self.__print_reply(status, generator)
 
     def __print_reply(self, status, generator):
-        if 200 != status:
+        if status != 200:
             raise Exception(status, next(generator))
 
         p = 0
@@ -347,7 +348,7 @@ class ChatBot:
 
             text = None
             message = result['message']
-            if 'assistant' == message['author']['role']:
+            if message['author']['role'] == 'assistant':
                 text = message['content']['parts'][0][p:]
                 p += len(text)
 
@@ -356,7 +357,7 @@ class ChatBot:
             self.state.chatgpt_prompt.parent_id = self.state.user_prompt.message_id
             self.state.chatgpt_prompt.message_id = message['id']
 
-            if 'system' == message['author']['role']:
+            if message['author']['role'] == 'system':
                 self.state.user_prompt.parent_id = message['id']
 
             if text:
@@ -371,15 +372,13 @@ class ChatBot:
 
         choices = ['c', 'r', 'dd']
         items = conversations['items']
-        first_page = 0 == conversations['offset']
+        first_page = conversations['offset'] == 0
         last_page = (conversations['offset'] + conversations['limit']) >= conversations['total']
 
-        Console.info_b('Choice conversation (Page {}):'.format(page))
+        Console.info_b(f'Choice conversation (Page {page}):')
         for idx, item in enumerate(items):
             number = str(idx + 1)
-            choices.append(number)
-            choices.append('t' + number)
-            choices.append('d' + number)
+            choices.extend((number, f't{number}', f'd{number}'))
             Console.info('  {}.\t{}'.format(number, item['title'].replace('\n', ' ')))
 
         if not last_page:
@@ -403,31 +402,31 @@ class ChatBot:
 
         while True:
             choice = Prompt.ask('Your choice', choices=choices, show_choices=False)
-            if 'c' == choice:
+            if choice == 'c':
                 return None
 
-            if 'k' == choice:
+            if choice == 'k':
                 self.run()
                 return
 
-            if 'r' == choice:
+            if choice == 'r':
                 return self.__choice_conversation(page, page_size)
 
-            if 'n' == choice:
+            if choice == 'n':
                 return self.__choice_conversation(page + 1, page_size)
 
-            if 'p' == choice:
+            if choice == 'p':
                 return self.__choice_conversation(page - 1, page_size)
 
-            if 'dd' == choice:
+            if choice == 'dd':
                 self.__clear_conversations()
                 continue
 
-            if 't' == choice[0]:
+            if choice[0] == 't':
                 self.__set_conversation_title(State(conversation_id=items[int(choice[1:]) - 1]['id']))
                 return self.__choice_conversation(page, page_size)
 
-            if 'd' == choice[0]:
+            if choice[0] == 'd':
                 self.__del_conversation(State(conversation_id=items[int(choice[1:]) - 1]['id']))
                 continue
 
@@ -437,7 +436,7 @@ class ChatBot:
         tokens = self.chatgpt.list_token_keys()
 
         size = len(tokens)
-        if 1 == size:
+        if size == 1:
             return None
 
         choices = ['r']
@@ -445,7 +444,7 @@ class ChatBot:
         for idx, item in enumerate(tokens):
             number = str(idx + 1)
             choices.append(number)
-            Console.info('  {}.\t{}'.format(number, item))
+            Console.info(f'  {number}.\t{item}')
 
         while True:
             choice = Prompt.ask('Your choice', choices=choices, show_choices=False)
@@ -456,7 +455,7 @@ class ChatBot:
         models = self.chatgpt.list_models(token=self.token_key)
 
         size = len(models)
-        if 1 == size:
+        if size == 1:
             return models[0]
 
         choices = ['r']
@@ -464,21 +463,17 @@ class ChatBot:
         for idx, item in enumerate(models):
             number = str(idx + 1)
             choices.append(number)
-            Console.info('  {}.\t{} - {}'.format(number, item['title'], item['description']))
+            Console.info(f"  {number}.\t{item['title']} - {item['description']}")
 
         Console.warn('  r.\tRefresh model list')
 
         while True:
             choice = Prompt.ask('Your choice', choices=choices, show_choices=False)
-            if 'r' == choice:
-                return self.__choice_model()
-
-            return models[int(choice) - 1]
+            return self.__choice_model() if choice == 'r' else models[int(choice) - 1]
 
     def __copy_text(self):
         pyperclip.copy(self.state.chatgpt_prompt.prompt)
         Console.info("已将上一次返回结果复制到剪切板。")
-        pass
 
     def __copy_code(self):
         text = self.state.chatgpt_prompt.prompt
@@ -491,4 +486,3 @@ class ChatBot:
             code = '\n=======================================================\n'.join(result)
             pyperclip.copy(code)
             Console.info("已将上一次生成的代码复制到剪切板。")
-        pass

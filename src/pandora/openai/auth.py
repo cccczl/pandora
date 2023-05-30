@@ -50,11 +50,7 @@ class Auth0:
         code_challenge = 'w6n3Ix420Xhhu-Q5-mOOEyuPZmAsJHUbBpO8Ub7xBCY'
         code_verifier = 'yGrXROHx_VazA0uovsxKfE263LMFcrSrdm4SlC-rob8'
 
-        url = 'https://auth0.openai.com/authorize?client_id=pdlLIX2Y72MIl2rhLhTE9VV9bN905kBh&audience=https%3A%2F' \
-              '%2Fapi.openai.com%2Fv1&redirect_uri=com.openai.chat%3A%2F%2Fauth0.openai.com%2Fios%2Fcom.openai.chat' \
-              '%2Fcallback&scope=openid%20email%20profile%20offline_access%20model.request%20model.read' \
-              '%20organization.read%20offline&response_type=code&code_challenge={}' \
-              '&code_challenge_method=S256&prompt=login'.format(code_challenge)
+        url = f'https://auth0.openai.com/authorize?client_id=pdlLIX2Y72MIl2rhLhTE9VV9bN905kBh&audience=https%3A%2F%2Fapi.openai.com%2Fv1&redirect_uri=com.openai.chat%3A%2F%2Fauth0.openai.com%2Fios%2Fcom.openai.chat%2Fcallback&scope=openid%20email%20profile%20offline_access%20model.request%20model.read%20organization.read%20offline&response_type=code&code_challenge={code_challenge}&code_challenge_method=S256&prompt=login'
         return self.__part_three(code_verifier, url)
 
     def __part_three(self, code_verifier, url: str) -> str:
@@ -75,7 +71,7 @@ class Auth0:
             raise Exception('Error request login url.')
 
     def __part_four(self, code_verifier: str, state: str) -> str:
-        url = 'https://auth0.openai.com/u/login/identifier?state=' + state
+        url = f'https://auth0.openai.com/u/login/identifier?state={state}'
         headers = {
             'User-Agent': self.user_agent,
             'Referer': url,
@@ -98,7 +94,7 @@ class Auth0:
             raise Exception('Error check email.')
 
     def __part_five(self, code_verifier: str, state: str) -> str:
-        url = 'https://auth0.openai.com/u/login/password?state=' + state
+        url = f'https://auth0.openai.com/u/login/password?state={state}'
         headers = {
             'User-Agent': self.user_agent,
             'Referer': url,
@@ -125,7 +121,7 @@ class Auth0:
             raise Exception('Error login.')
 
     def __part_six(self, code_verifier: str, location: str, ref: str) -> str:
-        url = 'https://auth0.openai.com' + location
+        url = f'https://auth0.openai.com{location}'
         headers = {
             'User-Agent': self.user_agent,
             'Referer': ref,
@@ -147,7 +143,7 @@ class Auth0:
         raise Exception('Error login.')
 
     def __part_seven(self, code_verifier: str, location: str) -> str:
-        url = 'https://auth0.openai.com' + location
+        url = f'https://auth0.openai.com{location}'
         data = {
             'state': parse_qs(urlparse(url).query)['state'][0],
             'code': self.mfa,
@@ -178,7 +174,7 @@ class Auth0:
         if 'error' in url_params:
             error = url_params['error'][0]
             error_description = url_params['error_description'][0] if 'error_description' in url_params else ''
-            raise Exception('{}: {}'.format(error, error_description))
+            raise Exception(f'{error}: {error_description}')
 
         if 'code' not in url_params:
             raise Exception('Error get code from callback url.')
@@ -196,19 +192,18 @@ class Auth0:
         }
         resp = self.session.post(url, headers=headers, json=data, allow_redirects=False, **self.req_kwargs)
 
-        if resp.status_code == 200:
-            json = resp.json()
-            if 'access_token' not in json:
-                raise Exception('Get access token failed, maybe you need a proxy.')
-
-            self.access_token = json['access_token']
-            self.expires = dt.utcnow() + datetime.timedelta(seconds=json['expires_in']) - datetime.timedelta(minutes=5)
-            return self.access_token
-        else:
+        if resp.status_code != 200:
             raise Exception(resp.text)
+        json = resp.json()
+        if 'access_token' not in json:
+            raise Exception('Get access token failed, maybe you need a proxy.')
+
+        self.access_token = json['access_token']
+        self.expires = dt.utcnow() + datetime.timedelta(seconds=json['expires_in']) - datetime.timedelta(minutes=5)
+        return self.access_token
 
     def get_access_token_proxy(self) -> str:
-        url = '{}/api/auth/login'.format(self.api_prefix)
+        url = f'{self.api_prefix}/api/auth/login'
         headers = {
             'User-Agent': self.user_agent,
         }
@@ -218,13 +213,12 @@ class Auth0:
         }
         resp = self.session.post(url=url, headers=headers, data=data, allow_redirects=False, **self.req_kwargs)
 
-        if resp.status_code == 200:
-            json = resp.json()
-            if 'accessToken' not in json:
-                raise Exception('Get access token failed.')
-
-            self.access_token = json['accessToken']
-            self.expires = dt.strptime(json['expires'], '%Y-%m-%dT%H:%M:%S.%fZ') - datetime.timedelta(minutes=5)
-            return self.access_token
-        else:
+        if resp.status_code != 200:
             raise Exception('Error get access token.')
+        json = resp.json()
+        if 'accessToken' not in json:
+            raise Exception('Get access token failed.')
+
+        self.access_token = json['accessToken']
+        self.expires = dt.strptime(json['expires'], '%Y-%m-%dT%H:%M:%S.%fZ') - datetime.timedelta(minutes=5)
+        return self.access_token

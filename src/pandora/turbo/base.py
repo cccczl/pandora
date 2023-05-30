@@ -184,10 +184,10 @@ class Conversation:
         return user_prompt, self.add_prompt(GptPrompt(user_prompt, model)), messages
 
     def get_info(self):
-        mapping = {}
-        for prompt_id in self.prompts:
-            mapping[prompt_id] = self.prompts[prompt_id].get_info()
-
+        mapping = {
+            prompt_id: self.prompts[prompt_id].get_info()
+            for prompt_id in self.prompts
+        }
         return {
             'title': self.title,
             'create_time': self.create_time,
@@ -217,15 +217,12 @@ class Conversations:
         return conversation
 
     def get(self, conversation_id):
-        for x in self.__data:
-            if x.conversation_id == conversation_id:
-                return x
-
-        return None
+        return next(
+            (x for x in self.__data if x.conversation_id == conversation_id), None
+        )
 
     def guard_get(self, conversation_id):
-        conversation = self.get(conversation_id)
-        if not conversation:
-            raise Exception('Can\'t load conversation {}'.format(conversation_id))
-
-        return conversation
+        if conversation := self.get(conversation_id):
+            return conversation
+        else:
+            raise Exception(f"Can\'t load conversation {conversation_id}")

@@ -13,7 +13,11 @@ def do_migrate():
     if not path.exists(USER_CONFIG_DIR):
         makedirs(USER_CONFIG_DIR)
 
-    url = 'mysql:{}'.format(DATABASE_URI[14:]) if 'mysql+pymysql:' == DATABASE_URI[0:14] else DATABASE_URI
+    url = (
+        f'mysql:{DATABASE_URI[14:]}'
+        if DATABASE_URI[:14] == 'mysql+pymysql:'
+        else DATABASE_URI
+    )
     backend = get_backend(url)
     migrations = read_migrations(abspath(join(dirname(__file__), 'scripts')))
 

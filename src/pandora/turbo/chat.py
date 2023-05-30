@@ -73,30 +73,24 @@ class TurboGPT:
             ]
         }
 
-        if raw:
-            return self.__wrap_response(models)
-
-        return models['models']
+        return self.__wrap_response(models) if raw else models['models']
 
     def list_conversations(self, offset, limit, raw=False, token=None):
         offset = int(offset)
         limit = int(limit)
         total, items = self.__get_conversations(token).list(offset, limit)
 
-        stripped = []
-        for item in items:
-            stripped.append({
+        stripped = [
+            {
                 'id': item.conversation_id,
                 'title': item.title,
                 'create_time': dt.utcfromtimestamp(item.create_time).isoformat(),
-            })
-
+            }
+            for item in items
+        ]
         result = {'items': stripped, 'total': total, 'limit': limit, 'offset': offset}
 
-        if raw:
-            return self.__wrap_response(result)
-
-        return result
+        return self.__wrap_response(result) if raw else result
 
     def get_conversation(self, conversation_id, raw=False, token=None):
         def __shadow():
@@ -129,10 +123,7 @@ class TurboGPT:
 
         resp = __shadow()
 
-        if raw:
-            return resp
-
-        return resp.json()['success']
+        return resp if raw else resp.json()['success']
 
     def del_conversation(self, conversation_id, raw=False, token=None):
         def __shadow():
@@ -196,7 +187,7 @@ class TurboGPT:
             return resp
 
         if resp.status_code != 200:
-            raise Exception('generate title failed: ' + resp.text)
+            raise Exception(f'generate title failed: {resp.text}')
 
         return resp.json()['title']
 
@@ -345,6 +336,6 @@ class TurboGPT:
             return result
 
         choice = data['choices'][0]
-        is_stop = 'stop' == choice['finish_reason']
+        is_stop = choice['finish_reason'] == 'stop'
 
         return self.__out_stream(conversation, gpt_prompt.append_content(result), is_stop)

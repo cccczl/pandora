@@ -24,7 +24,7 @@ class Console:
 
     @staticmethod
     def clear():
-        os.system('cls' if 'nt' == os.name else 'clear')
+        os.system('cls' if os.name == 'nt' else 'clear')
 
     @staticmethod
     def print(msg):

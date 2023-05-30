@@ -51,30 +51,28 @@ class ConversationOfficial(Base):
 
     @staticmethod
     def new_conversation(conversation_id, title=None):
-        conv = ConversationOfficial.get(conversation_id)
-
-        if not conv:
+        if conv := ConversationOfficial.get(conversation_id):
+            conv.title = title or 'New chat'
+            conv.save()
+        else:
             conv = ConversationOfficial()
             conv.conversation_id = conversation_id
             conv.title = title or 'New chat'
             conv.create_time = dt.now().timestamp()
             conv.new()
-        else:
-            conv.title = title or 'New chat'
-            conv.save()
 
     @staticmethod
     def wrap_conversation_list(offset, limit):
         total, items = ConversationOfficial.get_list(offset, limit)
 
-        stripped = []
-        for item in items:
-            stripped.append({
+        stripped = [
+            {
                 'id': item.conversation_id,
                 'title': item.title,
                 'create_time': dt.utcfromtimestamp(item.create_time).isoformat(),
-            })
-
+            }
+            for item in items
+        ]
         return {'items': stripped, 'total': total, 'limit': limit, 'offset': offset}
 
 

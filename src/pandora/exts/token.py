@@ -41,5 +41,5 @@ def check_access_token_out(access_token, api=False):
     try:
         return check_access_token(access_token, api)
     except Exception as e:
-        Console.error('### Invalid access token: {}'.format(str(e)))
+        Console.error(f'### Invalid access token: {str(e)}')
         return False

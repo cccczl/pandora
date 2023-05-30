@@ -68,7 +68,7 @@ def main():
         from pandora_cloud.server import ChatBot as CloudServer
 
         return CloudServer(args.proxy, args.verbose, args.sentry, True).run(args.server, args.threads)
-    except (ImportError, ModuleNotFoundError):
+    except ImportError:
         Console.error_bh('### You need `pip install Pandora-ChatGPT[cloud]` to support cloud mode.')
 
 
@@ -78,7 +78,7 @@ def run():
     try:
         main()
     except Exception as e:
-        Console.error_bh('### Error occurred: ' + str(e))
+        Console.error_bh(f'### Error occurred: {str(e)}')
 
         if __show_verbose:
             logger.exception('Exception occurred.')
